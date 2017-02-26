@@ -22,7 +22,7 @@
 
 // some GAME SPACE (parameters)
 // max uses of the freeze/delete mechanic per playthrough/frame
-int maxDeletions = 3;
+int maxDeletions = 3; 
 // radius of point freeze/deletion
 float freezeRadius = 100.0;
 boolean drawFreezeRadius = true; 
