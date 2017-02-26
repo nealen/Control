@@ -31,7 +31,9 @@ int NP = 101;
 // spring constant/stiffness
 float springStiffness = 0.25;
 // min dist for particle-particle interaction
+// for attractive forces
 float D  = 150.0f;
+// for repulsive forces
 float rd = 60.0f;
 // player particle mass
 float pMass = 1.0;
