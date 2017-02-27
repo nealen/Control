@@ -549,7 +549,7 @@ void move(long deltaTime) { // deltaTime in milliseconds
           if (enemyPissedOff && 
              (p[1].dist(p[i]) < freezeRadius || p[1].dist(p[j]) < freezeRadius) &&
               i != 1 && j != 1) {
-            f_ij.mult(2.0);
+            f_ij.mult(4.0);
             f[i].sub(f_ij);
           }
 
