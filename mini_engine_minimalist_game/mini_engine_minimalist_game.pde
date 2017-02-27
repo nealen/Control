@@ -259,7 +259,13 @@ void renderStuff() {
           float d = p[i].dist(p[j]);
           if (d < D) {
             // set stroke alpha (transparency) based on distance threshold
-            stroke(255, 255, 255, D-d);
+            if (enemyPissedOff && 
+               (p[1].dist(p[i]) < freezeRadius || p[1].dist(p[j]) < freezeRadius) &&
+                i != 1 && j != 1) {
+              stroke(255, 0, 0, D-d);
+            } else {
+              stroke(255, 255, 255, D-d);
+            }
             line(p[i].x, p[i].y, p[j].x, p[j].y);
             // reset alpha to 1/255
             stroke(255, 255, 255, 255);
