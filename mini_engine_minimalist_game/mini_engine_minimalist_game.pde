@@ -94,6 +94,9 @@ boolean renderParticles = true;
 // background color
 color bg = color(0, 0, 0);
 
+// random seed
+int seed = 0;
+
 // timer stuff
 long timeStarted;
 long timeElapsed;
@@ -419,6 +422,7 @@ void keyPressed() {
     gameRunning = !gameRunning;
   } else if (key == 'r') {
     resetGameAndScore();
+    seed = 0;
   } else if (key == 'q') {
     exit();
   } else if (key == 'P') {
@@ -652,11 +656,13 @@ PVector genPoint() {
 }
 
 void genPoints() {
+  randomSeed(seed);
   if (poissonSampling) {
     rerollPoisson();
   } else {
     reroll();
   }
+  seed++;
 }
 
 void reroll() {
