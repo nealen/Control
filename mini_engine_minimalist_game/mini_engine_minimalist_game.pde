@@ -421,8 +421,8 @@ void keyPressed() {
     // (un)pause
     gameRunning = !gameRunning;
   } else if (key == 'r') {
-    resetGameAndScore();
     seed = 0;
+    resetGameAndScore();
   } else if (key == 'q') {
     exit();
   } else if (key == 'P') {
