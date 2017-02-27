@@ -85,9 +85,6 @@ int PT = 20;
 PVector[] trail = new PVector[PT]; 
 int trailHead = 0; // index into trail[] to indicate the head of the trail (2d pos)
 int drawTrail = 2; // (0 = no trail, 1 = not tapered, 2 = tapered trail
-// last enemy positions
-PVector[] eTrail = new PVector[PT]; 
-boolean enemyPissedOff = false;
 // particle rendering
 boolean renderParticles = true;
 
@@ -219,12 +216,10 @@ void resetGame() {
   gameState = gs.GS_RUNNING;
   println("GAME_STATE: RUNNING");
   println("remaining tries = " + numDeletions);  
-  // init player and enemy trail
+  // init player trail
   for (int i = 0; i < PT; i++) {
     trail[i] = new PVector(p[0].x, p[0].y);
-    eTrail[i] = new PVector(p[1].x, p[1].y);
   }
-  enemyPissedOff = false;
 }
 
 void resetGameAndScore() {
@@ -289,20 +284,14 @@ void renderStuff() {
     }
   }
 
-  // draw player and enemy particle with or without trail 
+  // draw player particle with or without trail 
   if (drawTrail < 1) {
     fill(255, 255, 255, 255);
     stroke(255, 255, 255, 255);
     ellipse(p[0].x, p[0].y, 20, 20);
-    ellipse(p[1].x, p[1].y, 20, 20);
     fill(150, 0, 0, 255);
     stroke(150, 0, 0, 255);
     ellipse(p[0].x, p[0].y, 15, 15);
-    if (!enemyPissedOff) {
-      fill(0, 0, 150, 255);
-      stroke(0, 0, 150, 255);
-    }
-    ellipse(p[1].x, p[1].y, 15, 15);
   } else {
     int size = 20;
     int trailIndex = trailHead;
@@ -312,8 +301,6 @@ void renderStuff() {
       trailIndex--; 
       if (trailIndex < 0) trailIndex = PT - 1;
       PVector pos = trail[trailIndex];
-      ellipse(pos.x, pos.y, size, size);
-      pos = eTrail[trailIndex];
       ellipse(pos.x, pos.y, size, size);
       if (drawTrail > 1) size *= 0.97;
     }
@@ -325,19 +312,6 @@ void renderStuff() {
       trailIndex--; 
       if (trailIndex < 0) trailIndex = PT - 1;
       PVector pos = trail[trailIndex];
-      ellipse(pos.x, pos.y, size, size);
-      if (drawTrail > 1) size *=0.94;
-    }
-    size = 15;
-    trailIndex = trailHead;
-    if (!enemyPissedOff) {
-      fill(0, 0, 150, 255);
-      stroke(0, 0, 150, 255);
-    }
-    for (int i = 0; i < PT; i++) {
-      trailIndex--; 
-      if (trailIndex < 0) trailIndex = PT - 1;
-      PVector pos = eTrail[trailIndex];
       ellipse(pos.x, pos.y, size, size);
       if (drawTrail > 1) size *=0.94;
     }
@@ -473,14 +447,10 @@ void gameLogic() {
     break;
   case GS_FREEZE:
     // set all particles in range to no longer alive
-    for (int i = 2; i < NP; i++ ) {
+    for (int i = 1; i < NP; i++ ) {
       if (p[0].dist(p[i]) < freezeRadius) {
         alive[i] = false;
       }
-    }
-    // piss off/pacify enemy in freeze radius
-    if (p[0].dist(p[1]) < freezeRadius) {
-      enemyPissedOff = !enemyPissedOff;
     }
     // used up one deletion (see maxDeletions)
     numDeletions--;
@@ -544,6 +514,7 @@ void move(long deltaTime) { // deltaTime in milliseconds
           // by the springStiffness constant
           f_ij.mult(adjustedStiffness); // f_ij = springStiffness * dist(i,j)
           f[i].add(f_ij);
+<<<<<<< HEAD
           
           // if the enemy is pissed off, go insane (i.e. mess with other particle forces) 
           if (enemyPissedOff && 
@@ -552,6 +523,8 @@ void move(long deltaTime) { // deltaTime in milliseconds
             f_ij.mult(4.0);
             f[i].sub(f_ij);
           }
+=======
+>>>>>>> parent of fb11ce2... added (hacked in) an enemy
 
           // some repulsion if particles are too close
           if (dist < rd) {
@@ -602,7 +575,6 @@ void move(long deltaTime) { // deltaTime in milliseconds
 
   // store player (physics) positions in an array for trail rendering
   trail[trailHead] = new PVector(p[0].x, p[0].y);
-  eTrail[trailHead] = new PVector(p[1].x, p[1].y);
   trailHead++;
   trailHead = trailHead % PT;
 }
@@ -637,7 +609,7 @@ void collide() {
 // score: how many particles are alive?
 int numParticlesAlive() {
   int s = 0;
-  for (int i = 2; i < NP; i++) {
+  for (int i = 1; i < NP; i++) {
     if (alive[i]) {
       s++;
     }
