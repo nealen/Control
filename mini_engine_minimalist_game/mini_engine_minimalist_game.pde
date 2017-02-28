@@ -115,7 +115,8 @@ long freezeTime = 400;
 boolean freezeTimerRunning = false;
 float screenShakeIntensity = 0.08 ;
 boolean useFreezeTimer = true;
-int numPhysicsSteps = 1;
+int numPhysicsSteps = 0;
+int maxPhysicsSteps = 4;
 
 void setup() { // this gets called once
 
@@ -168,7 +169,7 @@ void draw() { // this gets called every frame of animation
   // which draw() is running
   long deltaTime = System.currentTimeMillis() - timeLastPhysicsTime;
   if (gameRunning && gameState == gs.GS_RUNNING) {
-    for (int m = 0; m < numPhysicsSteps; m++) {
+    for (int m = 0; m < numPhysicsSteps + 1; m++) {
       move(deltaTime);
       collide();
     }
@@ -466,7 +467,8 @@ void keyPressed() {
   } else if (key == 'e') {
     drawFreezeRadius = !drawFreezeRadius;
   } else if (key == 'b') {
-    if (numPhysicsSteps == 1) numPhysicsSteps = 2; else numPhysicsSteps = 1;
+    numPhysicsSteps++;
+    numPhysicsSteps %= maxPhysicsSteps;
   }
 }
 
