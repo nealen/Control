@@ -25,7 +25,7 @@
 int maxDeletions = 3; 
 // radius of point freeze/deletion
 float freezeRadius = 100.0;
-boolean drawFreezeRadius = true; 
+boolean drawFreezeRadius = true;
 // num points 
 int NP = 101;
 // spring constant/stiffness
@@ -115,6 +115,7 @@ long freezeTime = 400;
 boolean freezeTimerRunning = false;
 float screenShakeIntensity = 0.08 ;
 boolean useFreezeTimer = true;
+int numPhysicsSteps = 1;
 
 void setup() { // this gets called once
 
@@ -167,8 +168,10 @@ void draw() { // this gets called every frame of animation
   // which draw() is running
   long deltaTime = System.currentTimeMillis() - timeLastPhysicsTime;
   if (gameRunning && gameState == gs.GS_RUNNING) {
-    move(deltaTime);
-    collide();
+    for (int m = 0; m < numPhysicsSteps; m++) {
+      move(deltaTime);
+      collide();
+    }
   }
   timeLastPhysicsTime = System.currentTimeMillis();
 
@@ -462,6 +465,8 @@ void keyPressed() {
     renderParticles = !renderParticles;
   } else if (key == 'e') {
     drawFreezeRadius = !drawFreezeRadius;
+  } else if (key == 'b') {
+    if (numPhysicsSteps == 1) numPhysicsSteps = 2; else numPhysicsSteps = 1;
   }
 }
 
