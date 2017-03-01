@@ -115,8 +115,12 @@ long freezeTime = 400;
 boolean freezeTimerRunning = false;
 float screenShakeIntensity = 0.08 ;
 boolean useFreezeTimer = true;
+
+// implemented a way to cycle through 4 speeds of the game
+// without compromising on the physics stability
 int numPhysicsSteps = 0;
 int maxPhysicsSteps = 4;
+float friction;
 
 void setup() { // this gets called once
 
@@ -206,7 +210,10 @@ void draw() { // this gets called every frame of animation
     textFont(font, 12);
     fill(255);
     text("freezes remaining: " + numDeletions, 100, 20);
-    text("particles remaining: " + numParticlesAlive(), 300, 20);
+    text("particles remaining: " + numParticlesAlive(), 270, 20);
+    text("speed: " + (numPhysicsSteps + 1) + "x", 450, 35);
+    String F = String.format("%1$.6f", friction);
+    text("friction: " + F, 450, 20);
     fill(0);
   }
 }
@@ -232,6 +239,7 @@ void resetGame() {
     eTrail[i] = new PVector(p[1].x, p[1].y);
   }
   enemyPissedOff = false;
+  numPhysicsSteps = 0;
 }
 
 void resetGameAndScore() {
@@ -601,10 +609,10 @@ void move(long deltaTime) { // deltaTime in milliseconds
   // note that this is a bit overkill for a prototype, but needed for production
 
   // add in some (game state dependent) friction
-  float fractionAlive = (float) numParticlesAlive() / (float) NP;
-  float friction = 0.996f + 0.004f * fractionAlive;
+  float fractionAlive = (float) (numParticlesAlive() + 2) / (float) NP;
+  friction = 0.996f + 0.004f * fractionAlive;
   // or not
-  // float friction = 1.0f;
+  // friction = 1.0f;
 
   // perform one (explicit) euler timestep
   for (int i = 0; i < NP; i++) {
