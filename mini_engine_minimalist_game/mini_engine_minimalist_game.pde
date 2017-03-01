@@ -8,18 +8,21 @@
 // particles /w springs + poisson point sampling 
 //
 // CONTROLS/KEYS
-// hit space bar to freeze time. hit it again to delete dots in the red ball 
-// and continue the physics simulation
-// default game is two tries of this (see maxDeletions), then 
-// lowest remaining number of dots wins
+// hit space bar to freeze time and delete dots in the red ball 
+// default game is three tries of this (see maxDeletions), then 
+// lowest remaining number of dots wins over a number of "frames"
 //
-// mr to reroll/reset the point sampling
+// r to reroll/reset the point sampling (reset the game)
 // v to toggle velocity vector rendering
 // s to toggle spring rendering
 // p to pause/unpause game
 // P to toggle poisson sampling (on by default)
 // q to quit
+// b to toggle different physics speeds
+// f to render framerate
 
+// BEGIN GLOBAL VARIABLES
+// ------------------------------------------------
 // some GAME SPACE (parameters)
 // max uses of the freeze/delete mechanic per playthrough/frame
 int maxDeletions = 3; 
@@ -43,6 +46,8 @@ int frameNumber = 0; // runs from 0 to numFrames-1
 int[] scores = new int[numFrames];
 boolean renderScoreCard = true;
 
+// SCRATCHPAD SPACE (for jotting down ideas as comments in the code/file
+// --------------------------------
 // IDEA: make a game with a single spring as a hand that grabs, and let it 
 //       be flung by the main/heavy body (())----() -> (())-() -> ()---(())
 //       skill lies in figuring out when to let go. could be a multiplayer
@@ -54,11 +59,12 @@ boolean renderScoreCard = true;
 //       adds some balance to the possibly overpowered delete mechanic
 //       could also introduce a game end condition: weaken the adversaries 
 //       links so it changes from indestructible to edible 
-//       (yeah, i'm making ****ing osmos 2 :)
+// --------------------------------
+// END SCRATCHPAD SPACE
 
 // instead of using a particle and particle system class
 // just use vectors where index i refers to the same particle
-// this should probably be implemented cleaner in production codeq
+// this should probably be implemented cleaner in production code
 // but doesn't matter during prototyping!
 PVector[] p = new PVector[NP]; // positions
 PVector[] v = new PVector[NP]; // velocities
@@ -69,32 +75,32 @@ boolean[] alive = new boolean[NP]; // alive/dead status per particle
 enum gs {
   GS_RUNNING, GS_FREEZE, GS_END
 };
-gs gameState; // game state
+gs gameState; // current game state
 // used for player interaction -- only advance game state if invoked
 boolean advanceState = false;
 int numDeletions; // keep track of number of times freeze/delete was used
 
 // boolean states for various render/sim options
 boolean gameRunning = false; // for (un)pausing the simulation
-boolean poissonSampling = true; // optional poisson sampling
-boolean renderVelocities = false; // debug output
-boolean renderSprings = true; // debug output
-boolean renderFPS = true; // debug output
-// last player positions
-int PT = 20;
+boolean poissonSampling = true; // poisson sampling instead of random
+boolean renderVelocities = false; // for debugging/design
+boolean renderSprings = true; // the forces between particles
+boolean renderFPS = true; // show the framerate
+// last player positions for trail rendering
+int PT = 20; // trail length
 PVector[] trail = new PVector[PT]; 
 int trailHead = 0; // index into trail[] to indicate the head of the trail (2d pos)
 int drawTrail = 2; // (0 = no trail, 1 = not tapered, 2 = tapered trail
-// last enemy positions
+// last enemy positions for trail rendering
 PVector[] eTrail = new PVector[PT]; 
-boolean enemyPissedOff = false;
+boolean enemyAnnoyed = false;
 // particle rendering
 boolean renderParticles = true;
 
 // background color
 color bg = color(0, 0, 0);
 
-// random seed
+// random seed (for deterministic randomness)
 int seed = 0;
 
 // timer stuff
@@ -110,17 +116,21 @@ long timeTargetFrameTime = 8; // target render frametime in ms
 long timeLastPhysicsTime;
 PFont font;
 boolean initPhysics = true; // start physics engine with a dt of 0, see below
+
+// stuff for freezing/shaking the screen for a bit while particles are deleted
 long freezeTimer;
-long freezeTime = 400;
+long freezeTime = 400; // freeze/shake for this long
 boolean freezeTimerRunning = false;
 float screenShakeIntensity = 0.08 ;
-boolean useFreezeTimer = true;
+boolean useFreezeTimer = true; // manually advance time with space bar if set to false
 
-// implemented a way to cycle through 4 speeds of the game
+// implemented a way to cycle through maxPhysicsSteps speeds of the game
 // without compromising on the physics stability
 int numPhysicsSteps = 0;
 int maxPhysicsSteps = 4;
 float friction;
+// ------------------------------------------------
+// END GLOBAL VARIABLES
 
 void setup() { // this gets called once
 
@@ -144,35 +154,39 @@ void setup() { // this gets called once
 } 
 
 void draw() { // this gets called every frame of animation
-  // use to also update the game state, not just render it
-  // most game engines will have separate routines for
-  // updating and rendering game state
+              // use to also update the game state, not just render it
+              // most game engines will have separate routines for
+              // updating and rendering game state
 
+  // GAME LOGIC
   // if game is running and advanceState was invoked, update game logic
   // (see keyPressed() to see how advanceState is set to true)
   if (gameRunning && advanceState) {
     gameLogic();
+    // only advance once, so set advanceState to false;
     advanceState = false;
   }
 
-  //freezeTimerRunning = false;
   // if the freeze state is induced, check to see if freezeTime has passed
   if (freezeTimerRunning) {
-    long ct = System.currentTimeMillis();
+    long currentTime = System.currentTimeMillis();
     // check to see if freezeTimer has run out
-    if (ct - freezeTimer > freezeTime) {
+    if (currentTime - freezeTimer > freezeTime) {
       // if yes, advance the game (to successor state) and stop the freeze timer
       gameLogic();
       freezeTimerRunning = false;
     }
   }
 
+  // PHYSICS
   // (physics) move and collide stuff if sim is running and is is the running state
   // this can always run at the highest framerate (= precision), but must be adaptive to the
   // framerate to be independent (minus numerical errors) of the rate at 
   // which draw() is running
   long deltaTime = System.currentTimeMillis() - timeLastPhysicsTime;
-  if (gameRunning && gameState == gs.GS_RUNNING) {
+  if (gameRunning && gameState == gs.GS_RUNNING) { // could this be more confusing?
+                                                   // gameRunning -> is game paused or not
+                                                   // gameState -> logic state the game is in
     for (int m = 0; m < numPhysicsSteps + 1; m++) {
       move(deltaTime);
       collide();
@@ -180,6 +194,7 @@ void draw() { // this gets called every frame of animation
   }
   timeLastPhysicsTime = System.currentTimeMillis();
 
+  // RENDER GAME FRAME
   // draw scene (all global vars for this prototype) even if not running game/logic
   // note: this is often locked to the refesh rate of the monitor in game engines
   // update 2/6/2017: added only to render if needed (see timeTargetFrameTime)
@@ -197,6 +212,7 @@ void draw() { // this gets called every frame of animation
       numFPSSamples = 0;
       fpsSum = 0;
     }
+
     // output render framerate (if on)
     if (renderFPS) {
       textFont(font, 12);
@@ -207,6 +223,7 @@ void draw() { // this gets called every frame of animation
     // update last render time
     timeLastRenderTime = ct;
 
+    // more UI/debug stuff in-game
     textFont(font, 12);
     fill(255);
     text("freezes remaining: " + numDeletions, 100, 20);
@@ -223,6 +240,7 @@ boolean renderTickPassed() {
   return (System.currentTimeMillis() - timeLastRenderTime) >= timeTargetFrameTime;
 }
 
+// used so framerate counter isn't updated too frequently, and also smoothed
 boolean updateFPSTickPassed() {
   return (System.currentTimeMillis() - timeLastUpdateFPSTime) >= timeUpdateFPS;
 }
@@ -238,7 +256,7 @@ void resetGame() {
     trail[i] = new PVector(p[0].x, p[0].y);
     eTrail[i] = new PVector(p[1].x, p[1].y);
   }
-  enemyPissedOff = false;
+  enemyAnnoyed = false;
   numPhysicsSteps = 0;
 }
 
@@ -271,7 +289,7 @@ void renderStuff() {
           float d = p[i].dist(p[j]);
           if (d < D) {
             // set stroke alpha (transparency) based on distance threshold
-            if (enemyPissedOff && 
+            if (enemyAnnoyed && 
                (p[1].dist(p[i]) < freezeRadius || p[1].dist(p[j]) < freezeRadius) &&
                 i != 1 && j != 1) {
               stroke(255, 0, 0, D-d);
@@ -287,7 +305,7 @@ void renderStuff() {
     }
   }
 
-  // draw velocity vectors (if alive) 
+  // draw velocity vectors (if particle alive) 
   if (renderVelocities) {
     float velRenderScale = 1.0;
     for (int i = 0; i < NP; i++) {
@@ -310,7 +328,9 @@ void renderStuff() {
     }
   }
 
-  // draw player and enemy particle with or without trail 
+  // draw player and enemy particle with or without trail
+  // NOTE: this is such a mess/hack. in a cleaner version, these would be objects,
+  //       and they would know how to draw themselves. BUT it's a prototype! no worries!
   if (drawTrail < 1) {
     fill(255, 255, 255, 255);
     stroke(255, 255, 255, 255);
@@ -319,7 +339,7 @@ void renderStuff() {
     fill(150, 0, 0, 255);
     stroke(150, 0, 0, 255);
     ellipse(p[0].x, p[0].y, 15, 15);
-    if (!enemyPissedOff) {
+    if (!enemyAnnoyed) {
       fill(0, 0, 150, 255);
       stroke(0, 0, 150, 255);
     }
@@ -351,7 +371,7 @@ void renderStuff() {
     }
     size = 15;
     trailIndex = trailHead;
-    if (!enemyPissedOff) {
+    if (!enemyAnnoyed) {
       fill(0, 0, 150, 255);
       stroke(0, 0, 150, 255);
     }
@@ -374,8 +394,7 @@ void renderStuff() {
     fill(0);
   }
 
-  // if gameState is FREEZE, show circle of deletion for better understanding
-  //  if (gameState == gs.GS_FREEZE) {
+  // draw the radius that will be deleted
   if (drawFreezeRadius) {
     fill(150, 0, 0, 100);
     stroke(150, 0, 0, 100);
@@ -390,9 +409,12 @@ void renderStuff() {
     popMatrix();
   } // so, no shake on anything after this line...
 
+  // score card in the bottom left
   if (renderScoreCard) renderScoreCard(10, 540, numFrames);
 }
 
+// parameterized by x/y position and number of scores until full reset
+// yeah, putting that numScores param in there is so needed.... not.
 void renderScoreCard(int x, int y, int numScores) {
   fill(255);
   textFont(font, 12);
@@ -468,6 +490,7 @@ void keyPressed() {
   } else if (key == 'f') {
     renderFPS= !renderFPS;
   } else if (key == 't') {
+    // cycle through trail rendering styles
     drawTrail += 1;
     drawTrail %= 3;
   } else if (key == 'y') {
@@ -475,6 +498,8 @@ void keyPressed() {
   } else if (key == 'e') {
     drawFreezeRadius = !drawFreezeRadius;
   } else if (key == 'b') {
+    // change number of physics steps taken per deltaTime 
+    // (to speed up things, not to increase stability of the simulation)
     numPhysicsSteps++;
     numPhysicsSteps %= maxPhysicsSteps;
   }
@@ -503,9 +528,9 @@ void gameLogic() {
         alive[i] = false;
       }
     }
-    // piss off/pacify enemy in freeze radius
+    // annoy/pacify enemy in freeze radius
     if (p[0].dist(p[1]) < freezeRadius) {
-      enemyPissedOff = !enemyPissedOff;
+      enemyAnnoyed = !enemyAnnoyed;
     }
     // used up one deletion (see maxDeletions)
     numDeletions--;
@@ -538,7 +563,7 @@ void move(long deltaTime) { // deltaTime in milliseconds
   // so the engine doesn't do weird stuff on frame one due to too large a dt
   if (initPhysics) {
     deltaTime = 0;
-    // only do this once
+    // only do this once on first call
     initPhysics = false;
   }
 
@@ -570,8 +595,8 @@ void move(long deltaTime) { // deltaTime in milliseconds
           f_ij.mult(adjustedStiffness); // f_ij = springStiffness * dist(i,j)
           f[i].add(f_ij);
           
-          // if the enemy is pissed off, go insane (i.e. mess with other particle forces) 
-          if (enemyPissedOff && 
+          // if the enemy is annoyed, go insane (i.e. mess with other particle-particle forces) 
+          if (enemyAnnoyed && 
              (p[1].dist(p[i]) < freezeRadius || p[1].dist(p[j]) < freezeRadius) &&
               i != 1 && j != 1) {
             f_ij.mult(2.0);
@@ -609,6 +634,7 @@ void move(long deltaTime) { // deltaTime in milliseconds
   // note that this is a bit overkill for a prototype, but needed for production
 
   // add in some (game state dependent) friction
+  // the more particles are deleted, the more friction is added to the system to slow things down
   float fractionAlive = (float) (numParticlesAlive() + 2) / (float) NP;
   friction = 0.996f + 0.004f * fractionAlive;
   // or not
@@ -628,6 +654,8 @@ void move(long deltaTime) { // deltaTime in milliseconds
   // store player (physics) positions in an array for trail rendering
   trail[trailHead] = new PVector(p[0].x, p[0].y);
   eTrail[trailHead] = new PVector(p[1].x, p[1].y);
+  // move to next slot in the array, eventually overwriting previous positions
+  // as trailHead loops around (PT is number of stored positions)
   trailHead++;
   trailHead = trailHead % PT;
 }
@@ -662,6 +690,8 @@ void collide() {
 // score: how many particles are alive?
 int numParticlesAlive() {
   int s = 0;
+  // super hack: particles 0 and 1 in the arrays are player and adversary
+  // what worked for osmos (final production code!) sure will work for a prototype!
   for (int i = 2; i < NP; i++) {
     if (alive[i]) {
       s++;
@@ -677,6 +707,7 @@ PVector genPoint() {
 }
 
 void genPoints() {
+  // use the global seed parameter to ensure that "random" positions are reproducible
   randomSeed(seed);
   if (poissonSampling) {
     rerollPoisson();
@@ -695,6 +726,8 @@ void reroll() {
     alive[i] = true;
   }
 }
+
+// this is procedural content generation (PCG) 101
 
 void rerollPoisson() { // dart throwing algorithm with... 
 
