@@ -733,7 +733,7 @@ void rerollPoisson() { // dart throwing algorithm with...
 
   // ... maxTries and minDist
   int maxTries = 100;
-  float minDist = 40.0;
+  float minDist = 40.0; 
 
   println("------------------------------");
   println("new poisson run with maxTries = " + maxTries);
@@ -772,8 +772,10 @@ void rerollPoisson() { // dart throwing algorithm with...
       if (numTries > 1) {
         println("point " + i + " rejected, num tries to find: " + numTries);
       }
-      // reset: go to next point sample, reset try counter
-      i++;
+      // reset/go to next sample point:
+      // increment loop counter
+      i++; 
+      // and reset try counter
       numTries = 0;
     }
   }  
