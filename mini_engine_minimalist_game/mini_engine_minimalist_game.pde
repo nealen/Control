@@ -742,22 +742,14 @@ void rerollPoisson() { // dart throwing algorithm with...
   int numTries = 0;
 
   for (int i = 0; i < NP; ) {
-
-    // grab a random point
-    PVector pt = genPoint();
-    // assume it's valid
-    boolean validPoint = true;
-    // increment attempt num
-    numTries++;
-
-    // test for validity of point
-    for (int j = 0; j < i; j++) {
+    PVector pt = genPoint();   // grab a random point
+    boolean validPoint = true; // assume it's valid
+    numTries++;                // increment attempt num
+    for (int j = 0; j < i; j++) { // test for validity of point
       float dist = PVector.dist(pt, p[j]); 
       if (dist < minDist) {
-        // too close to existing point, reject sample point
-        validPoint = false;
-        // we can stop checking. a single fail is a fail.
-        break;
+        validPoint = false; // too close to existing point, reject sample point
+        break;              // we can stop checking. a single fail is a fail.
       }
     }
 
