@@ -2,7 +2,7 @@
 // andy nealen, NYU, 2/1/2017
 //
 // delete the dots! 
-// (with physics!) 
+// (with physics!)
 //
 // simple euler method/time integration demo with 
 // particles /w springs + poisson point sampling 
@@ -45,6 +45,7 @@ int numFrames = 5;
 int frameNumber = 0; // runs from 0 to numFrames-1
 int[] scores = new int[numFrames];
 boolean renderScoreCard = true;
+// END GLOBAL VARIABLES
 
 // SCRATCHPAD SPACE (for jotting down ideas as comments in the code/file
 // --------------------------------
@@ -621,6 +622,7 @@ void move(long deltaTime) { // deltaTime in milliseconds
 
   // euler method per particle: update v[i] and p[i] based on f[i]
   float dt = deltaTime/1000.0f; // delta time (dt) in seconds
+  // dt *= 0.5;
   float m  = 1.0; // mass of particles in kg
   // newton's second law of motion: f(orce) = m(ass) * a(cceleration, or a = f / m
   // assuming a timestep dt (in seconds), the difference in velocity 
